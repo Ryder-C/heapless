@@ -281,15 +281,8 @@ where
     /// Consumes the HistoryBuffer, returning an array with the contents of the buffer in order.
     /// 
     /// The array may have trailing 
-    pub fn consume(mut self) -> ([T; N], usize) {
-        let mut buf = [T::default(); N];
-        let len = self.len();
-
-        for (i, e) in self.oldest_ordered_mut().enumerate() {
-            buf[i] = e;
-        }
-
-        (buf, len)
+    pub fn consume(self) -> HistoryBufferSlice<T, N> {
+        HistoryBufferSlice::from(self)
     }
 }
 
@@ -418,6 +411,31 @@ impl<'a, T, const N: usize> Iterator for OldestOrderedMut<'a, T, N> {
 
     fn next(&mut self) -> Option<T> {
         self.buf.pop_oldest()
+    }
+}
+
+pub struct HistoryBufferSlice<T, const N: usize> {
+    buf: [T; N],
+    len: usize
+}
+
+impl<'a, T, const N: usize> HistoryBufferSlice<T, N>
+where
+    T: Default + Copy
+{
+    pub fn from(mut source: HistoryBuffer<T, N>) -> Self {
+        let mut buf = [T::default(); N];
+        let len = source.len();
+
+        for (i, e) in source.oldest_ordered_mut().enumerate() {
+            buf[i] = e;
+        }
+
+        Self { buf, len }
+    }
+
+    pub fn slice(&'a self) -> &'a [T] {
+        &self.buf[..self.len]
     }
 }
 
@@ -721,10 +739,8 @@ mod tests {
 
         x.pop_oldest();
 
-        let (buf, len) = x.consume();
+        let buf = x.consume();
 
-        assert_eq!(len, 4);
-        assert_eq_iter(buf[..len].iter(), [3, 4, 5, 6].iter());
-        assert_eq!(buf[len], 0);
+        assert_eq_iter(buf.slice().iter(), [3, 4, 5, 6].iter());
     }
 }
