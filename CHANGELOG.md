@@ -44,6 +44,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - `OldestOrdered.next()`
 
 ### Fixed
+- Linear Map `Drop` impl
 
 ### Removed
 
