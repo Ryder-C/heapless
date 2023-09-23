@@ -274,6 +274,25 @@ impl<T, const N: usize> HistoryBuffer<T, N> {
     }
 }
 
+impl<T, const N: usize> HistoryBuffer<T, N>
+where
+    T: Default + Copy
+{
+    /// Consumes the HistoryBuffer, returning an array with the contents of the buffer in order.
+    /// 
+    /// The array may have trailing 
+    pub fn consume(mut self) -> ([T; N], usize) {
+        let mut buf = [T::default(); N];
+        let len = self.len();
+
+        for (i, e) in self.oldest_ordered_mut().enumerate() {
+            buf[i] = e;
+        }
+
+        (buf, len)
+    }
+}
+
 impl<T, const N: usize> Extend<T> for HistoryBuffer<T, N> {
     fn extend<I>(&mut self, iter: I)
     where
@@ -692,5 +711,20 @@ mod tests {
         }
 
         assert_eq!(x.len(), 4 as usize);
+    }
+
+    #[test]
+    fn consume() {
+        let mut x: HistoryBuffer<u8, 5> = HistoryBuffer::new();
+        
+        x.extend(&[1, 2, 3, 4, 5, 6]);
+
+        x.pop_oldest();
+
+        let (buf, len) = x.consume();
+
+        assert_eq!(len, 4);
+        assert_eq_iter(buf[..len].iter(), [3, 4, 5, 6].iter());
+        assert_eq!(buf[len], 0);
     }
 }
