@@ -197,8 +197,11 @@ impl<T, const N: usize> HistoryBuffer<T, N> {
         }
     }
 
+    // TODO: fix this
+
     /// Returns the array slice backing the buffer, without keeping track
     /// of the write position. Therefore, the element order is unspecified.
+    /// 
     pub fn as_slice(&self) -> &[T] {
         unsafe {
             slice::from_raw_parts(
@@ -206,6 +209,8 @@ impl<T, const N: usize> HistoryBuffer<T, N> {
             )
         }
     }
+
+    // TODO: this doesn't work because 'as_slice' doesn't work
 
     /// Returns a pair of slices which contain, in order, the contents of the buffer.
     ///
@@ -313,11 +318,15 @@ impl<T, const N: usize> Clone for HistoryBuffer<T, N>
 where
     T: Clone,
 {
+
+    // TODO: this doesn't work because 'as_slice' doesn't work
     fn clone(&self) -> Self {
         let mut ret = Self::new();
+
         for (new, old) in ret.data.iter_mut().zip(self.as_slice()) {
             new.write(old.clone());
         }
+
         ret.write_at = self.write_at;
         ret.len = self.len;
         ret
@@ -729,6 +738,20 @@ mod tests {
         }
 
         assert_eq!(x.len(), 4 as usize);
+
+        // clone (this test fails because clone doesn't work yet)
+        x.extend(&[1, 2, 3, 4, 5, 6]);
+        {
+            let mut ordered = x.oldest_ordered_mut();
+            assert_eq!(ordered.next(), Some(2));
+            assert_eq!(ordered.next(), Some(3));
+            assert_eq!(ordered.next(), Some(4));
+        }
+
+        let new_buf = x.clone();
+
+        assert_eq_iter(new_buf.oldest_ordered(), x.oldest_ordered());
+
     }
 
     #[test]
